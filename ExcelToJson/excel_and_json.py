@@ -1,0 +1,129 @@
+#coding=utf-8
+
+import xlrd
+import sys
+import getopt
+import SheetManager
+
+
+#单表模式
+def singlebook():
+    opts, args = getopt.getopt(sys.argv[2:], "hi:o:")
+
+    for op, value in opts:
+        if op == "-i":
+            file_path = value
+        elif op == "-o":
+            output_path = value
+        elif op == "-h":
+            #TODO 写说明文字
+            # usage()
+            sys.exit()
+
+    if not "file_path" in locals().keys():
+        # usage()
+        sys.exit()
+    elif not "output_path" in locals().keys():
+        # usage()
+        sys.exit()
+
+    SheetManager.addWorkBook(file_path)
+    sheetNameList = SheetManager.getSheetNameList()
+
+    for sheet_name in sheetNameList:
+        #单表模式下，被引用的表不会输出
+        if SheetManager.isReferencedSheet(sheet_name):
+            continue
+
+        sheetJSON = SheetManager.exportJSON(sheet_name)
+
+        filename = output_path + unicode(sheet_name + '.json').encode('UTF-8')        
+        f = file(filename, 'w')
+        f.write(sheetJSON.encode('UTF-8'))
+        f.close()
+
+#主表模式
+def mainbook():
+    opts, args = getopt.getopt(sys.argv[2:], "hi:o:")
+
+    for op, value in opts:
+        if op == "-i":
+            file_path = value
+        elif op == "-o":
+            output_path = value
+        elif op == "-h":
+            #TODO 写说明文字
+            # usage()
+            sys.exit()
+
+    if not "file_path" in locals().keys():
+        # usage()
+        sys.exit()
+    elif not "output_path" in locals().keys():
+        # usage()
+        sys.exit()
+
+    #获取主表各种参数#
+    wb = xlrd.open_workbook(file_path)
+    sh = wb.sheet_by_index(0)
+
+    workbookPathList = []
+    sheetList = []
+    for row in range(sh.nrows):
+        type = sh.cell(row,0).value
+
+        if type == '__workbook__':
+            pass
+        else:
+            sheetList.append([])
+            sheet = sheetList[-1]
+            sheet.append(type)
+
+        for col in range(1,sh.ncols):
+            value = sh.cell(row,col).value
+
+            if type == '__workbook__' and value != '':
+                workbookPathList.append(value)
+            elif value != '':
+                sheet.append(value)
+
+    #加载所有xlsx文件#
+    for workbookPath in workbookPathList:
+        #读取所有sheet
+        SheetManager.addWorkBook(workbookPath+".xlsx")
+
+    #输出所有表#
+    for sheet in sheetList:
+
+        #表改名处理
+        if '->' in sheet[0]:
+            sheet_name = sheet[0].split('->')[0]
+            sheet_output_name = sheet[0].split('->')[1]
+        else:
+            sheet_output_name = sheet_name = sheet[0]
+
+        sheet_output_field = sheet[1:]
+
+        sheetJSON = SheetManager.exportJSON(sheet_name,sheet_output_field)
+
+        f = file(output_path+sheet_output_name+'.json', 'w')
+        f.write(sheetJSON.encode('UTF-8'))
+        f.close()
+
+if __name__ == '__main__':
+    modelType =  sys.argv[1]
+
+    try:
+        if modelType == "singlebook":
+            singlebook()
+        elif modelType == "mainbook":
+            mainbook()
+        else:
+            # usage()
+            sys.exit()
+    except Exception, e:
+        log_file = open('log.txt', 'w')
+        str_log = '--------------Error---------------\r\n' \
+                   + 'exceptoin info:' + e + '\r\n'
+        log_file.write(str_log)
+        log_file.close()
