@@ -10,12 +10,9 @@ from email.header import Header
 from email.utils import parseaddr, formataddr
 
 
-
-
 def _format_addr(s):
 	name, addr = parseaddr(s)
 	return formataddr((Header(name, 'utf-8').encode(), addr.encode('utf-8') if isinstance(addr, unicode) else addr))
-
 
 def send_mail(mail_conf, subject='', main_body=''):
 
@@ -48,7 +45,7 @@ def send_mail(mail_conf, subject='', main_body=''):
 		for filename in filenames:
 			file_surfix = os.path.splitext(filename)[1][1:]
 			if file_surfix in file_type_list:
-				print filename, "size:", os.path.getsize(filename)                    
+				#print filename, "size:", os.path.getsize(filename)
 				attach_file = open(os.path.join(dirpath, filename), 'rb')
 				if attach_file:
 					attachment = MIMEText(attach_file.read(), 'base64', 'utf-8')
@@ -59,17 +56,17 @@ def send_mail(mail_conf, subject='', main_body=''):
 				else:
 					print "Error open file! " + os.path.join(dirpath, filename)
 
-	try:                
+	try:
 		smtpObj = smtplib.SMTP()
 		smtpObj.connect(smtp_server)
-		smtpObj.login(sender, sender_psw)                
+		smtpObj.login(sender, sender_psw)
 		smtpObj.sendmail(sender, receivers, message.as_string())
-		smtpObj.quit()                
-			
+		smtpObj.quit()
+
 		print "OK: send mail succeed!"
-		
+
 	except smtplib.SMTPException:
-		print "Error: send mail failed! "        
+		print "Error: send mail failed! "
 
 
 
